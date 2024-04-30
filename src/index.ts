@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 currentExpression = result.toString();
                 updateDisplay(currentExpression);
-            } catch (error) {
+            } catch (error: any) {
                 currentExpression = '';
                 // alert(error.message);
                 displayError(error.message);
@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const disableEqualsButton = (disabled) => {
+    const disableEqualsButton = (disabled: boolean) => {
         const equalsButton = document.getElementById(
             'equals'
         ) as HTMLButtonElement;
