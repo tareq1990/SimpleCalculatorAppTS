@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const display = document.getElementById('display');
     const errorMsgDiv = document.getElementById('error-msg-div');
     const errorMsgSpan = document.getElementById('error-msg');
+    const equalsButton = document.getElementById('equals');
     let currentExpression = '';
     const MIN_VALUE = -9999.99;
     const MAX_VALUE = 9999.99;
@@ -10,14 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateDisplay = (value) => {
         display.value = value;
     };
-    // Function to validate operand values
+    // Function to validate operand range
     const isWithinOperandRange = (operand) => {
-        console.log('inside isWithinOperandRange', operand);
         const num = parseFloat(operand);
-        if (!isNaN(num)) {
-            return num >= MIN_VALUE && num <= MAX_VALUE;
-        }
-        return false;
+        return !isNaN(num) && num >= MIN_VALUE && num <= MAX_VALUE;
     };
     // Function to display an error message
     const displayError = (errorMsg) => {
@@ -28,57 +25,58 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMsgSpan.textContent = '';
         }, 5000);
     };
-    // Function to extract operands from expression
+    // Function to extract operands from the expression
     const extractOperands = (expression) => {
         return expression.split(/[-+*/]/).filter(Boolean);
+    };
+    // Generate expression and validate it
+    const generateExpression = (value) => {
+        // Ensure `currentExpression` reflects the latest state of the display
+        currentExpression = display.value;
+        const tempExpression = currentExpression + value;
+        const operands = extractOperands(tempExpression);
+        const isAnyOperandOutOfRange = operands.some((operand) => !isWithinOperandRange(operand));
+        if (isAnyOperandOutOfRange) {
+            displayError('Operand out of range');
+            disableEqualsButton(true);
+        }
+        else {
+            disableEqualsButton(false);
+            currentExpression = tempExpression;
+            updateDisplay(currentExpression);
+        }
+    };
+    // Disable or enable the equals button
+    const disableEqualsButton = (disabled) => {
+        equalsButton.disabled = disabled;
     };
     // Add event listeners to each button
     document.querySelectorAll('.calculator .btn').forEach((button) => {
         const value = button.getAttribute('data-value');
         if (value) {
             button.addEventListener('click', () => {
-                // Temporary expression to check validity
-                const tempExpression = currentExpression + value;
-                const operands = extractOperands(tempExpression);
-                console.log('x:', operands);
-                // Check if any operand is out of range
-                let isAnyOperandOutOfRange = operands.some((operand) => !isWithinOperandRange(operand));
-                if (isAnyOperandOutOfRange) {
-                    displayError('Operand out of range');
-                    disableEqualsButton(true);
-                }
-                else {
-                    disableEqualsButton(false);
-                }
-                // continue updating the expression
-                currentExpression += value;
-                updateDisplay(currentExpression);
+                generateExpression(value); // Generate the expression
             });
         }
     });
     // Equals button event listener
-    const equalsButton = document.getElementById('equals');
     if (equalsButton) {
         equalsButton.addEventListener('click', () => {
             try {
-                const result = eval(currentExpression);
-                // if infinity then throw error of divide by zero
+                let result = eval(currentExpression);
                 if (result === Infinity || result === -Infinity) {
                     throw new Error('Error: Divide by zero');
                 }
                 if (isNaN(result)) {
                     throw new Error('Invalid expression');
                 }
-                // if (result < MIN_VALUE || result > MAX_VALUE) {
-                //     throw new Error('Result out of range');
-                // }
-                currentExpression = result.toString();
-                updateDisplay(currentExpression);
+                // convert to 2 decimal places
+                result = result.toFixed(2);
+                updateDisplay(result.toString()); // Display the result
+                currentExpression = result.toString(); // Update the current expression
             }
             catch (error) {
-                currentExpression = '';
-                // alert(error.message);
-                displayError(error.message);
+                displayError(error.message); // Display the error
             }
         });
     }
@@ -86,15 +84,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearButton = document.getElementById('clear');
     if (clearButton) {
         clearButton.addEventListener('click', () => {
-            currentExpression = '';
-            updateDisplay('');
-            disableEqualsButton(false);
+            updateDisplay(''); // Clear the display
+            currentExpression = ''; // Reset the current expression
+            disableEqualsButton(false); // Re-enable the equals button
         });
     }
-    const disableEqualsButton = (disabled) => {
-        const equalsButton = document.getElementById('equals');
-        if (equalsButton) {
-            equalsButton.disabled = disabled;
+    // Restrict input to valid characters and avoid doubling
+    display.addEventListener('input', (event) => {
+        const input = event.target;
+        const regex = /^[0-9+\-*/.]*$/;
+        if (!regex.test(input.value)) {
+            input.value = input.value.replace(/[^0-9+\-*/.]/g, ''); // Remove invalid characters
         }
-    };
+        let curInpValue = input.value;
+        input.value = '';
+        // currentExpression = '';
+        // console.log('currentExpression', currentExpression);
+        // console.log('input.value', input.value);
+        generateExpression(curInpValue);
+    });
+    // Handle "Enter" key to trigger calculation
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            equalsButton === null || equalsButton === void 0 ? void 0 : equalsButton.click(); // Trigger calculation
+        }
+    });
 });
